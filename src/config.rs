@@ -57,6 +57,10 @@ pub fn maxage() -> Result<Rank> {
     })
 }
 
+pub fn match_trailing_slash() -> bool {
+    env::var_os("_ZO_MATCH_TRAILING_SLASH").is_some_and(|var| var == "1")
+}
+
 pub fn resolve_symlinks() -> bool {
     env::var_os("_ZO_RESOLVE_SYMLINKS").is_some_and(|var| var == "1")
 }

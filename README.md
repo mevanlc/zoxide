@@ -466,6 +466,11 @@ Environment variables[^2] can be used for configuration. They must be set before
   - Configures the [aging algorithm][algorithm-aging], which limits the maximum
     number of entries in the database.
   - By default, this is set to 10000.
+- `_ZO_MATCH_TRAILING_SLASH`
+  - When set to 1, a query keyword ending in a slash can match the end of a
+    stored directory path as if the directory had an implicit trailing slash.
+  - For example, `z /foo/` can match `/home/alice/foo`, but not
+    `/home/alice/foo-bar`.
 - `_ZO_RESOLVE_SYMLINKS`
   - When set to 1, `z` will resolve symlinks before adding directories to the
     database.

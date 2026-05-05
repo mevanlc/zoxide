@@ -85,14 +85,23 @@ impl<'a> Stream<'a> {
 
         let path = util::to_lowercase(path);
         let mut path = path.as_str();
-        match path.rfind(keywords_last) {
-            Some(idx) => {
-                if path[idx + keywords_last.len()..].contains(path::is_separator) {
+        if self.options.match_trailing_slash && keywords_last.ends_with(path::is_separator) {
+            let mut matched_path = path;
+            if Self::find_last_keyword(&mut matched_path, keywords_last) {
+                path = matched_path;
+            } else {
+                let keyword = keywords_last.trim_end_matches(path::is_separator);
+                if !keyword.is_empty() {
+                    match path.rfind(keyword) {
+                        Some(idx) if idx + keyword.len() == path.len() => path = &path[..idx],
+                        _ => return false,
+                    }
+                } else {
                     return false;
                 }
-                path = &path[..idx];
             }
-            None => return false,
+        } else if !Self::find_last_keyword(&mut path, keywords_last) {
+            return false;
         }
 
         for keyword in keywords.iter().rev() {
@@ -103,6 +112,19 @@ impl<'a> Stream<'a> {
         }
 
         true
+    }
+
+    fn find_last_keyword(path: &mut &str, keyword: &str) -> bool {
+        match path.rfind(keyword) {
+            Some(idx) => {
+                if path[idx + keyword.len()..].contains(path::is_separator) {
+                    return false;
+                }
+                *path = &path[..idx];
+                true
+            }
+            None => false,
+        }
     }
 }
 
@@ -122,6 +144,9 @@ pub struct StreamOptions {
     /// Whether to resolve symlinks when checking if a directory exists.
     resolve_symlinks: bool,
 
+    /// Whether trailing slashes in queries can match the end of directory paths.
+    match_trailing_slash: bool,
+
     /// Directories that do not exist and haven't been accessed since TTL will
     /// be lazily removed.
     ttl: Epoch,
@@ -139,6 +164,7 @@ impl StreamOptions {
             exclude: Vec::new(),
             exists: false,
             resolve_symlinks: false,
+            match_trailing_slash: false,
             ttl: now.saturating_sub(3 * MONTH),
             base_dir: None,
         }
@@ -165,6 +191,11 @@ impl StreamOptions {
 
     pub fn with_resolve_symlinks(mut self, resolve_symlinks: bool) -> Self {
         self.resolve_symlinks = resolve_symlinks;
+        self
+    }
+
+    pub fn with_match_trailing_slash(mut self, match_trailing_slash: bool) -> Self {
+        self.match_trailing_slash = match_trailing_slash;
         self
     }
 
@@ -205,6 +236,31 @@ mod tests {
     fn query(#[case] keywords: &[&str], #[case] path: &str, #[case] is_match: bool) {
         let db = &mut Database::new(PathBuf::new(), Vec::new(), |_| Vec::new(), false);
         let options = StreamOptions::new(0).with_keywords(keywords.iter());
+        let stream = Stream::new(db, options);
+        assert_eq!(is_match, stream.filter_by_keywords(path));
+    }
+
+    #[rstest]
+    #[case(&["foo/"], "/foo", true)]
+    #[case(&["foo/"], "/foo/bar", true)]
+    #[case(&["foo/"], "/foo/bar/baz", false)]
+    #[case(&["foo/"], "/foobar", false)]
+    #[case(&["/lat/"], "/home/me/p/my/lat", true)]
+    #[case(&["/lat/"], "/home/me/p/my/latest", false)]
+    #[case(&["/lat/"], "/home/me/p/my/lat-tools", false)]
+    #[case(&["/lat/"], "/home/me/p/my/lat/tools", true)]
+    #[case(&["/lat/"], "/home/me/p/my/lat/tools/more", false)]
+    #[case(&["my", "lat/"], "/home/me/p/my/lat", true)]
+    #[case(&["other", "lat/"], "/home/me/p/my/lat", false)]
+    #[case(&["foo", "/"], "/foo/bar", true)]
+    fn query_with_match_trailing_slash(
+        #[case] keywords: &[&str],
+        #[case] path: &str,
+        #[case] is_match: bool,
+    ) {
+        let db = &mut Database::new(PathBuf::new(), Vec::new(), |_| Vec::new(), false);
+        let options =
+            StreamOptions::new(0).with_keywords(keywords.iter()).with_match_trailing_slash(true);
         let stream = Stream::new(db, options);
         assert_eq!(is_match, stream.filter_by_keywords(path));
     }
