@@ -141,29 +141,67 @@ impl Database {
         // Sort by path, so that equal paths are next to each other.
         self.sort_by_path();
 
-        let mut dirty = false;
+        // Collect runs of byte-equal paths, then merge each run into its
+        // first entry.
+        let mut groups = Vec::new();
+        let dirs = self.dirs();
+        let mut idx = 0;
+        while idx < dirs.len() {
+            let mut end = idx + 1;
+            while end < dirs.len() && dirs[end].path == dirs[idx].path {
+                end += 1;
+            }
+            if end - idx > 1 {
+                groups.push((idx, (idx + 1..end).collect()));
+            }
+            idx = end;
+        }
+        self.merge_entries(&groups);
+    }
+
+    /// Merges groups of entries. For each `(survivor_idx, victim_idxs)`
+    /// group, the survivor's rank becomes the group's summed rank and its
+    /// `last_accessed` the group's max; the victims are then removed. All
+    /// indices refer to the database before any removal, and an entry may
+    /// appear in at most one group.
+    pub fn merge_entries(&mut self, groups: &[(usize, Vec<usize>)]) {
+        if groups.iter().all(|(_, victim_idxs)| victim_idxs.is_empty()) {
+            return;
+        }
+
         self.with_dirs_mut(|dirs| {
-            for idx in (1..dirs.len()).rev() {
-                // Check if curr_dir and next_dir have equal paths.
-                let curr_dir = &dirs[idx];
-                let next_dir = &dirs[idx - 1];
-                if next_dir.path != curr_dir.path {
-                    continue;
+            for (survivor_idx, victim_idxs) in groups {
+                for &idx in victim_idxs {
+                    let rank = dirs[idx].rank;
+                    let last_accessed = dirs[idx].last_accessed;
+                    let survivor = &mut dirs[*survivor_idx];
+                    survivor.rank += rank;
+                    survivor.last_accessed = survivor.last_accessed.max(last_accessed);
                 }
+            }
 
-                // Merge curr_dir's rank and last_accessed into next_dir.
-                let rank = curr_dir.rank;
-                let last_accessed = curr_dir.last_accessed;
-                let next_dir = &mut dirs[idx - 1];
-                next_dir.last_accessed = next_dir.last_accessed.max(last_accessed);
-                next_dir.rank += rank;
-
-                // Delete curr_dir.
+            // Removing in descending index order keeps the remaining victim
+            // indices valid: `swap_remove` only disturbs positions at or
+            // above the removed one.
+            let mut victim_idxs = groups
+                .iter()
+                .flat_map(|(_, victim_idxs)| victim_idxs.iter().copied())
+                .collect::<Vec<_>>();
+            victim_idxs.sort_unstable_by(|idx1, idx2| idx2.cmp(idx1));
+            for idx in victim_idxs {
                 dirs.swap_remove(idx);
-                dirty = true;
             }
         });
-        self.with_dirty_mut(|dirty_prev| *dirty_prev |= dirty);
+        self.with_dirty_mut(|dirty| *dirty = true);
+    }
+
+    /// Replaces the path of the entry at `idx`.
+    pub fn set_path(&mut self, idx: usize, path: impl AsRef<str> + Into<String>) {
+        if self.dirs()[idx].path == path.as_ref() {
+            return;
+        }
+        self.with_dirs_mut(|dirs| dirs[idx].path = path.into().into());
+        self.with_dirty_mut(|dirty| *dirty = true);
     }
 
     pub fn sort_by_path(&mut self) {
@@ -258,6 +296,59 @@ mod tests {
             assert!((dir.rank - 2.0).abs() < 0.01);
             assert_eq!(dir.last_accessed, now);
         }
+    }
+
+    #[test]
+    fn dedup() {
+        let data_dir = tempfile::tempdir().unwrap();
+        let (path1, path2) =
+            if cfg!(windows) { (r"C:\foo\bar", r"C:\foo\baz") } else { ("/foo/bar", "/foo/baz") };
+
+        let mut db = Database::open_dir(data_dir.path()).unwrap();
+        db.add_unchecked(path1, 1.0, 100);
+        db.add_unchecked(path2, 2.0, 300);
+        db.add_unchecked(path1, 4.0, 200);
+        db.add_unchecked(path1, 8.0, 50);
+        db.dedup();
+
+        assert_eq!(db.dirs().len(), 2);
+        let dir1 = db.dirs().iter().find(|dir| dir.path == path1).unwrap();
+        assert!((dir1.rank - 13.0).abs() < 0.01);
+        assert_eq!(dir1.last_accessed, 200);
+        let dir2 = db.dirs().iter().find(|dir| dir.path == path2).unwrap();
+        assert!((dir2.rank - 2.0).abs() < 0.01);
+        assert_eq!(dir2.last_accessed, 300);
+    }
+
+    #[test]
+    fn merge_entries() {
+        let data_dir = tempfile::tempdir().unwrap();
+
+        let mut db = Database::open_dir(data_dir.path()).unwrap();
+        db.add_unchecked("/foo/a", 1.0, 100);
+        db.add_unchecked("/foo/b", 2.0, 400);
+        db.add_unchecked("/foo/c", 4.0, 200);
+        db.add_unchecked("/foo/d", 8.0, 300);
+
+        // Merge b and d into a; c untouched.
+        db.merge_entries(&[(0, vec![1, 3])]);
+
+        assert_eq!(db.dirs().len(), 2);
+        let dir_a = db.dirs().iter().find(|dir| dir.path == "/foo/a").unwrap();
+        assert!((dir_a.rank - 11.0).abs() < 0.01);
+        assert_eq!(dir_a.last_accessed, 400);
+        let dir_c = db.dirs().iter().find(|dir| dir.path == "/foo/c").unwrap();
+        assert!((dir_c.rank - 4.0).abs() < 0.01);
+        assert_eq!(dir_c.last_accessed, 200);
+    }
+
+    #[test]
+    fn merge_entries_empty_stays_clean() {
+        let data_dir = tempfile::tempdir().unwrap();
+
+        let mut db = Database::open_dir(data_dir.path()).unwrap();
+        db.merge_entries(&[]);
+        assert!(!db.dirty());
     }
 
     #[test]

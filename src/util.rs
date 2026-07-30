@@ -378,3 +378,116 @@ pub fn to_lowercase(s: impl AsRef<str>) -> String {
     let s = s.as_ref();
     if s.is_ascii() { s.to_ascii_lowercase() } else { s.to_lowercase() }
 }
+
+/// Key under which different spellings of the same directory collide: full
+/// Unicode case folding (so `ß` ≡ `ss` ≡ `ẞ`) plus canonical normalization
+/// (so NFC `é` ≡ NFD `é`). This is deliberately at least as generous as the
+/// broadest real filesystem equivalence (APFS); over-grouping is corrected by
+/// probing the filesystem, while under-grouping would silently miss
+/// duplicates.
+pub fn fold_key(path: impl AsRef<str>) -> String {
+    use caseless::Caseless;
+    use unicode_normalization::UnicodeNormalization;
+
+    let path = path.as_ref();
+    if path.is_ascii() {
+        return path.to_ascii_lowercase();
+    }
+    path.chars().nfd().default_case_fold().nfc().collect()
+}
+
+/// Returns the on-disk spelling of `path`, which may differ from `path` in
+/// case or Unicode normalization on filesystems that fold them. Returns
+/// `Some` only when the result is fold-equivalent to `path`; this guards
+/// against mechanisms that resolve symlinks and would otherwise swap in an
+/// unrelated path.
+#[cfg(target_os = "macos")]
+pub fn true_spelling(path: &str) -> Option<String> {
+    use std::os::fd::AsRawFd;
+
+    // `realpath`/`fs::canonicalize` does not case-correct on macOS, but the
+    // kernel tracks the on-disk spelling of every open file.
+    let file = File::open(path).ok()?;
+    let mut buf = [0u8; libc::PATH_MAX as usize];
+    if unsafe { libc::fcntl(file.as_raw_fd(), libc::F_GETPATH, buf.as_mut_ptr()) } == -1 {
+        return None;
+    }
+    let len = buf.iter().position(|&b| b == 0)?;
+    let spelling = str::from_utf8(&buf[..len]).ok()?.to_owned();
+    (fold_key(&spelling) == fold_key(path)).then_some(spelling)
+}
+
+/// Returns the on-disk spelling of `path`, which may differ from `path` in
+/// case or Unicode normalization on filesystems that fold them. Returns
+/// `Some` only when the result is fold-equivalent to `path`; this guards
+/// against symlink resolution swapping in an unrelated path.
+#[cfg(windows)]
+pub fn true_spelling(path: &str) -> Option<String> {
+    // `GetFinalPathNameByHandle` (via `canonicalize`) returns the on-disk
+    // spelling; `dunce` strips the `\\?\` prefix.
+    let spelling = dunce::canonicalize(path).ok()?;
+    let spelling = spelling.to_str()?.to_owned();
+    (fold_key(&spelling) == fold_key(path)).then_some(spelling)
+}
+
+/// Returns the on-disk spelling of `path`, which may differ from `path` in
+/// case or Unicode normalization on filesystems that fold them (e.g. ext4
+/// directories with the casefold attribute). Only the final component is
+/// corrected: it is looked up in the parent directory by file identity.
+/// Returns `Some` only when the result is fold-equivalent to `path`.
+#[cfg(all(unix, not(target_os = "macos")))]
+pub fn true_spelling(path: &str) -> Option<String> {
+    use std::os::unix::fs::MetadataExt;
+
+    let parent = Path::new(path).parent()?;
+    let metadata = fs::symlink_metadata(path).ok()?;
+    let (dev, ino) = (metadata.dev(), metadata.ino());
+
+    for entry in fs::read_dir(parent).ok()?.filter_map(|entry| entry.ok()) {
+        // `DirEntry::metadata` does not traverse symlinks.
+        let Ok(entry_metadata) = entry.metadata() else { continue };
+        if (entry_metadata.dev(), entry_metadata.ino()) != (dev, ino) {
+            continue;
+        }
+        let spelling = parent.join(entry.file_name());
+        let spelling = spelling.to_str()?.to_owned();
+        return (fold_key(&spelling) == fold_key(path)).then_some(spelling);
+    }
+    None
+}
+
+/// Returns the on-disk spelling of `path`. Not supported on this platform.
+#[cfg(not(any(unix, windows)))]
+pub fn true_spelling(_path: &str) -> Option<String> {
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fold_key_ascii_case() {
+        assert_eq!(fold_key("/foo/AA"), fold_key("/foo/aa"));
+        assert_eq!(fold_key("/foo/AA"), fold_key("/foo/Aa"));
+        assert_ne!(fold_key("/foo/AA"), fold_key("/foo/AB"));
+    }
+
+    #[test]
+    fn fold_key_full_case_fold() {
+        // Full Unicode case folding: ß ≡ ss ≡ ẞ (APFS behaves this way).
+        assert_eq!(fold_key("/foo/straße"), fold_key("/foo/strasse"));
+        assert_eq!(fold_key("/foo/straße"), fold_key("/foo/STRASSE"));
+        assert_eq!(fold_key("/foo/ß"), fold_key("/foo/ẞ"));
+        assert_eq!(fold_key("/foo/ß"), fold_key("/foo/ss"));
+    }
+
+    #[test]
+    fn fold_key_normalization() {
+        // NFC "é" (U+00E9) vs NFD "é" (U+0065 U+0301).
+        assert_eq!(fold_key("/foo/caf\u{e9}"), fold_key("/foo/cafe\u{301}"));
+        // NFC vs NFD, combined with a case difference.
+        assert_eq!(fold_key("/foo/CAF\u{c9}"), fold_key("/foo/cafe\u{301}"));
+        assert_ne!(fold_key("/foo/cafe"), fold_key("/foo/caf\u{e9}"));
+    }
+}

@@ -39,6 +39,19 @@ _arguments "${_arguments_options[@]}" : \
 '*::paths:_files -/' \
 && ret=0
 ;;
+(dedupe)
+_arguments "${_arguments_options[@]}" : \
+'-i[Do not consult the filesystem\: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
+'--assume-insensitive[Do not consult the filesystem\: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
+'-n[Show what would be merged without modifying the database]' \
+'--dry-run[Show what would be merged without modifying the database]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'*::pathglobs -- Globs selecting which entries to process, matched against the full stored path. Use '\''*'\'' to process the whole database:_files -/' \
+&& ret=0
+;;
 (edit)
 _arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
@@ -218,6 +231,7 @@ esac
 _zoxide_commands() {
     local commands; commands=(
 'add:Add a new directory or increment its rank' \
+'dedupe:Merge database entries that refer to the same directory' \
 'edit:Edit the database' \
 'import:Import entries from another application' \
 'init:Generate shell configuration' \
@@ -230,6 +244,11 @@ _zoxide_commands() {
 _zoxide__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'zoxide add commands' commands "$@"
+}
+(( $+functions[_zoxide__subcmd__dedupe_commands] )) ||
+_zoxide__subcmd__dedupe_commands() {
+    local commands; commands=()
+    _describe -t commands 'zoxide dedupe commands' commands "$@"
 }
 (( $+functions[_zoxide__subcmd__edit_commands] )) ||
 _zoxide__subcmd__edit_commands() {

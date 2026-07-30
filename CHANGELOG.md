@@ -7,6 +7,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `dedupe` subcommand: merges database entries that refer to the same
+  directory under different spellings (case or Unicode normalization
+  variants), combining their scores.
+
 ## [0.10.0] - 2026-07-04
 
 ### Added
@@ -584,6 +592,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions pipeline to build and upload releases.
 - Add support for Zsh.
 
+[unreleased]: https://github.com/ajeetdsouza/zoxide/compare/v0.10.0...HEAD
 [0.10.0]: https://github.com/ajeetdsouza/zoxide/compare/v0.9.9...v0.10.0
 [0.9.9]: https://github.com/ajeetdsouza/zoxide/compare/v0.9.8...v0.9.9
 [0.9.8]: https://github.com/ajeetdsouza/zoxide/compare/v0.9.7...v0.9.8

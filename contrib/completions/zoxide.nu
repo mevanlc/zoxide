@@ -14,6 +14,15 @@ module completions {
     ...paths: path
   ]
 
+  # Merge database entries that refer to the same directory
+  export extern "zoxide dedupe" [
+    --assume-insensitive(-i)  # Do not consult the filesystem: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems
+    --dry-run(-n)             # Show what would be merged without modifying the database
+    --help(-h)                # Print help
+    --version(-V)             # Print version
+    ...pathglobs: path        # Globs selecting which entries to process, matched against the full stored path. Use '*' to process the whole database
+  ]
+
   # Edit the database
   export extern "zoxide edit" [
     --help(-h)                # Print help

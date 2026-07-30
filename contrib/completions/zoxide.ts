@@ -31,6 +31,33 @@ const completion: Fig.Spec = {
       },
     },
     {
+      name: "dedupe",
+      description: "Merge database entries that refer to the same directory",
+      options: [
+        {
+          name: ["-i", "--assume-insensitive"],
+          description: "Do not consult the filesystem: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems",
+        },
+        {
+          name: ["-n", "--dry-run"],
+          description: "Show what would be merged without modifying the database",
+        },
+        {
+          name: ["-h", "--help"],
+          description: "Print help",
+        },
+        {
+          name: ["-V", "--version"],
+          description: "Print version",
+        },
+      ],
+      args: {
+        name: "pathglobs",
+        isVariadic: true,
+        template: "folders",
+      },
+    },
+    {
       name: "edit",
       description: "Edit the database",
       subcommands: [

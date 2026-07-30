@@ -27,6 +27,7 @@ end
 complete -c zoxide -n "__fish_zoxide_needs_command" -s h -l help -d 'Print help'
 complete -c zoxide -n "__fish_zoxide_needs_command" -s V -l version -d 'Print version'
 complete -c zoxide -n "__fish_zoxide_needs_command" -f -a "add" -d 'Add a new directory or increment its rank'
+complete -c zoxide -n "__fish_zoxide_needs_command" -f -a "dedupe" -d 'Merge database entries that refer to the same directory'
 complete -c zoxide -n "__fish_zoxide_needs_command" -f -a "edit" -d 'Edit the database'
 complete -c zoxide -n "__fish_zoxide_needs_command" -f -a "import" -d 'Import entries from another application'
 complete -c zoxide -n "__fish_zoxide_needs_command" -f -a "init" -d 'Generate shell configuration'
@@ -35,6 +36,10 @@ complete -c zoxide -n "__fish_zoxide_needs_command" -f -a "remove" -d 'Remove a 
 complete -c zoxide -n "__fish_zoxide_using_subcommand add" -s s -l score -d 'The rank to increment the entry if it exists or initialize it with if it doesn\'t' -r
 complete -c zoxide -n "__fish_zoxide_using_subcommand add" -s h -l help -d 'Print help'
 complete -c zoxide -n "__fish_zoxide_using_subcommand add" -s V -l version -d 'Print version'
+complete -c zoxide -n "__fish_zoxide_using_subcommand dedupe" -s i -l assume-insensitive -d 'Do not consult the filesystem: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
+complete -c zoxide -n "__fish_zoxide_using_subcommand dedupe" -s n -l dry-run -d 'Show what would be merged without modifying the database'
+complete -c zoxide -n "__fish_zoxide_using_subcommand dedupe" -s h -l help -d 'Print help'
+complete -c zoxide -n "__fish_zoxide_using_subcommand dedupe" -s V -l version -d 'Print version'
 complete -c zoxide -n "__fish_zoxide_using_subcommand edit; and not __fish_seen_subcommand_from decrement delete increment reload" -s h -l help -d 'Print help'
 complete -c zoxide -n "__fish_zoxide_using_subcommand edit; and not __fish_seen_subcommand_from decrement delete increment reload" -s V -l version -d 'Print version'
 complete -c zoxide -n "__fish_zoxide_using_subcommand edit; and not __fish_seen_subcommand_from decrement delete increment reload" -f -a "decrement"

@@ -43,6 +43,7 @@ https://github.com/ajeetdsouza/zoxide
 )]
 pub enum Cmd {
     Add(Add),
+    Dedupe(Dedupe),
     Edit(Edit),
     Import(Import),
     Init(Init),
@@ -64,6 +65,30 @@ pub struct Add {
     /// doesn't
     #[clap(short, long)]
     pub score: Option<f64>,
+}
+
+/// Merge database entries that refer to the same directory
+#[derive(Debug, Parser)]
+#[clap(
+    author,
+    help_template = HelpTemplate,
+)]
+pub struct Dedupe {
+    /// Globs selecting which entries to process, matched against the full
+    /// stored path. Use '*' to process the whole database
+    #[clap(num_args = 1.., required = true, value_name = "pathglob", value_hint = ValueHint::DirPath)]
+    pub pathglobs: Vec<String>,
+
+    /// Do not consult the filesystem: merge all entries that are textually
+    /// equivalent (Unicode case fold + NFC). Required to merge entries whose
+    /// directories no longer exist; can merge genuinely distinct directories
+    /// on case-sensitive filesystems
+    #[clap(long, short = 'i')]
+    pub assume_insensitive: bool,
+
+    /// Show what would be merged without modifying the database
+    #[clap(long, short = 'n')]
+    pub dry_run: bool,
 }
 
 /// Edit the database
