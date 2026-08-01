@@ -1,11 +1,45 @@
 use crate::cmd::InitHook;
 
 #[derive(Debug, Eq, PartialEq)]
+pub struct FzfInsertBinding {
+    pub bash: String,
+    pub fish: String,
+    pub nushell: String,
+    pub zsh: String,
+}
+
+impl FzfInsertBinding {
+    pub fn parse(keyspec: &str) -> Result<Self, String> {
+        let mut chars = keyspec.chars();
+        let (Some('^'), Some(key), None) = (chars.next(), chars.next(), chars.next()) else {
+            return Err(format!(
+                "invalid key specification {keyspec:?}: expected control-key notation such as '^g'"
+            ));
+        };
+        if !key.is_ascii_alphabetic() {
+            return Err(format!(
+                "invalid key specification {keyspec:?}: the key after '^' must be an ASCII letter"
+            ));
+        }
+
+        let lower = key.to_ascii_lowercase();
+        let upper = key.to_ascii_uppercase();
+        Ok(Self {
+            bash: format!(r"\C-{lower}"),
+            fish: format!(r"\c{lower}"),
+            nushell: format!("char_{lower}"),
+            zsh: format!("^{upper}"),
+        })
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
 pub struct Opts<'a> {
     pub cmd: Option<&'a str>,
     pub hook: InitHook,
     pub echo: bool,
     pub resolve_symlinks: bool,
+    pub bind_fzf_insert: Option<FzfInsertBinding>,
 }
 
 macro_rules! make_template {
@@ -33,6 +67,58 @@ make_template!(Tcsh, "tcsh.txt");
 make_template!(Xonsh, "xonsh.txt");
 make_template!(Zsh, "zsh.txt");
 
+#[cfg(test)]
+mod fzf_insert_tests {
+    use askama::Template;
+
+    use super::*;
+
+    fn opts() -> Opts<'static> {
+        Opts {
+            cmd: Some("z"),
+            hook: InitHook::Pwd,
+            echo: false,
+            resolve_symlinks: false,
+            bind_fzf_insert: Some(FzfInsertBinding::parse("^g").unwrap()),
+        }
+    }
+
+    #[test]
+    fn parses_portable_control_keyspec() {
+        assert_eq!(
+            FzfInsertBinding::parse("^G"),
+            Ok(FzfInsertBinding {
+                bash: r"\C-g".to_string(),
+                fish: r"\cg".to_string(),
+                nushell: "char_g".to_string(),
+                zsh: "^G".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_non_control_keyspecs() {
+        for keyspec in ["g", "ctrl-g", "^^", "^1", "^gg"] {
+            assert!(FzfInsertBinding::parse(keyspec).is_err(), "accepted {keyspec:?}");
+        }
+    }
+
+    #[test]
+    fn renders_shell_native_bindings() {
+        assert!(
+            Bash(&opts())
+                .render()
+                .unwrap()
+                .contains(r#"bind -m emacs-standard -x '"\C-g": __zoxide_fzf_insert'"#)
+        );
+        assert!(
+            Zsh(&opts()).render().unwrap().contains("bindkey -M emacs '^G' __zoxide_fzf_insert")
+        );
+        assert!(Fish(&opts()).render().unwrap().contains(r"bind \cg __zoxide_fzf_insert"));
+        assert!(Nushell(&opts()).render().unwrap().contains("keycode: char_g"));
+    }
+}
+
 #[cfg(feature = "nix-dev")]
 #[cfg(test)]
 mod tests {
@@ -53,9 +139,92 @@ mod tests {
     ) {
     }
 
+    fn fzf_opts() -> Opts<'static> {
+        Opts {
+            cmd: Some("z"),
+            hook: InitHook::Pwd,
+            echo: false,
+            resolve_symlinks: false,
+            bind_fzf_insert: Some(FzfInsertBinding::parse("^g").unwrap()),
+        }
+    }
+
+    #[test]
+    fn bash_fzf_insert_syntax() {
+        let source = Bash(&fzf_opts()).render().unwrap();
+        Command::new("bash")
+            .args(["--noprofile", "--norc", "-e", "-u", "-o", "pipefail", "-c", &source])
+            .assert()
+            .success()
+            .stdout("")
+            .stderr("");
+        Command::new("shellcheck")
+            .args(["--enable=all", "-"])
+            .write_stdin(source.clone())
+            .assert()
+            .success()
+            .stdout("")
+            .stderr("");
+
+        let source = format!("{source}\n");
+        Command::new("shfmt")
+            .args(["--diff", "--indent=4", "--language-dialect=bash", "--simplify", "-"])
+            .write_stdin(source.clone())
+            .assert()
+            .success()
+            .stdout("")
+            .stderr("");
+    }
+
+    #[test]
+    fn fish_fzf_insert_syntax() {
+        let source = Fish(&fzf_opts()).render().unwrap();
+        let tempdir = tempfile::tempdir().unwrap();
+        Command::new("fish")
+            .env("HOME", tempdir.path())
+            .args(["--command", &source, "--no-config", "--private"])
+            .assert()
+            .success()
+            .stdout("")
+            .stderr("");
+
+        let source = format!("{source}\n");
+        Command::new("fish_indent")
+            .env("HOME", tempdir.path())
+            .write_stdin(source.clone())
+            .assert()
+            .success()
+            .stdout(source)
+            .stderr("");
+    }
+
+    #[test]
+    fn nushell_fzf_insert_syntax() {
+        let source = Nushell(&fzf_opts()).render().unwrap();
+        let tempdir = tempfile::tempdir().unwrap();
+        Command::new("nu")
+            .env("HOME", tempdir.path())
+            .args(["--commands", &source])
+            .assert()
+            .success()
+            .stdout("")
+            .stderr("");
+    }
+
+    #[test]
+    fn zsh_fzf_insert_syntax() {
+        let source = Zsh(&fzf_opts()).render().unwrap();
+        Command::new("zsh")
+            .args(["-e", "-u", "-o", "pipefail", "--no-globalrcs", "--no-rcs", "-c", &source])
+            .assert()
+            .success()
+            .stdout("")
+            .stderr("");
+    }
+
     #[apply(opts)]
     fn bash_bash(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Bash(&opts).render().unwrap();
         Command::new("bash")
             .args(["--noprofile", "--norc", "-e", "-u", "-o", "pipefail", "-c", &source])
@@ -67,7 +236,7 @@ mod tests {
 
     #[apply(opts)]
     fn bash_shellcheck(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Bash(&opts).render().unwrap();
 
         Command::new("shellcheck")
@@ -81,7 +250,7 @@ mod tests {
 
     #[apply(opts)]
     fn bash_shfmt(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let mut source = Bash(&opts).render().unwrap();
         source.push('\n');
 
@@ -96,7 +265,7 @@ mod tests {
 
     #[apply(opts)]
     fn elvish_elvish(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let mut source = String::new();
 
         // Filter out lines using edit:*, since those functions are only available in
@@ -116,7 +285,7 @@ mod tests {
 
     #[apply(opts)]
     fn fish_no_builtin_abbr(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Fish(&opts).render().unwrap();
         assert!(
             !source.contains("builtin abbr"),
@@ -126,7 +295,7 @@ mod tests {
 
     #[apply(opts)]
     fn fish_fish(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Fish(&opts).render().unwrap();
 
         let tempdir = tempfile::tempdir().unwrap();
@@ -143,7 +312,7 @@ mod tests {
 
     #[apply(opts)]
     fn fish_fishindent(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let mut source = Fish(&opts).render().unwrap();
         source.push('\n');
 
@@ -161,7 +330,7 @@ mod tests {
 
     #[apply(opts)]
     fn nushell_nushell(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Nushell(&opts).render().unwrap();
 
         let tempdir = tempfile::tempdir().unwrap();
@@ -181,7 +350,7 @@ mod tests {
 
     #[apply(opts)]
     fn posix_bash(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Posix(&opts).render().unwrap();
 
         let assert = Command::new("bash")
@@ -196,7 +365,7 @@ mod tests {
 
     #[apply(opts)]
     fn posix_dash(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Posix(&opts).render().unwrap();
 
         let assert =
@@ -208,7 +377,7 @@ mod tests {
 
     #[apply(opts)]
     fn posix_shellcheck(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Posix(&opts).render().unwrap();
 
         Command::new("shellcheck")
@@ -222,7 +391,7 @@ mod tests {
 
     #[apply(opts)]
     fn posix_shfmt(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let mut source = Posix(&opts).render().unwrap();
         source.push('\n');
 
@@ -237,7 +406,7 @@ mod tests {
 
     #[apply(opts)]
     fn powershell_pwsh(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let mut source = "Set-StrictMode -Version latest\n".to_string();
         Powershell(&opts).render_into(&mut source).unwrap();
 
@@ -251,7 +420,7 @@ mod tests {
 
     #[apply(opts)]
     fn tcsh_tcsh(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Tcsh(&opts).render().unwrap();
 
         Command::new("tcsh")
@@ -265,7 +434,7 @@ mod tests {
 
     #[apply(opts)]
     fn xonsh_black(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let mut source = Xonsh(&opts).render().unwrap();
         source.push('\n');
 
@@ -279,7 +448,7 @@ mod tests {
 
     #[apply(opts)]
     fn xonsh_mypy(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Xonsh(&opts).render().unwrap();
 
         Command::new("mypy").args(["--command", &source, "--strict"]).assert().success().stderr("");
@@ -287,7 +456,7 @@ mod tests {
 
     #[apply(opts)]
     fn xonsh_pylint(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let mut source = Xonsh(&opts).render().unwrap();
         source.push('\n');
 
@@ -301,7 +470,7 @@ mod tests {
 
     #[apply(opts)]
     fn xonsh_xonsh(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Xonsh(&opts).render().unwrap();
 
         let tempdir = tempfile::tempdir().unwrap();
@@ -318,7 +487,7 @@ mod tests {
 
     #[apply(opts)]
     fn zsh_shellcheck(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Zsh(&opts).render().unwrap();
 
         // ShellCheck doesn't support zsh yet: https://github.com/koalaman/shellcheck/issues/809
@@ -333,7 +502,7 @@ mod tests {
 
     #[apply(opts)]
     fn zsh_zsh(cmd: Option<&str>, hook: InitHook, echo: bool, resolve_symlinks: bool) {
-        let opts = Opts { cmd, hook, echo, resolve_symlinks };
+        let opts = Opts { cmd, hook, echo, resolve_symlinks, bind_fzf_insert: None };
         let source = Zsh(&opts).render().unwrap();
 
         Command::new("zsh")

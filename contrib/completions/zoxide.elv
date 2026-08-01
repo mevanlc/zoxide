@@ -138,6 +138,7 @@ set edit:completion:arg-completer[zoxide] = {|@words|
             cand --version 'Print version'
         }
         &'zoxide;init'= {
+            cand --bind-fzf-insert 'Binds a control key (e.g. ''^g'') to interactively select and insert a directory'
             cand --cmd 'Changes the prefix of the `z` and `zi` commands'
             cand --hook 'Changes how often zoxide increments a directory''s score'
             cand --no-cmd 'Prevents zoxide from defining the `z` and `zi` commands'

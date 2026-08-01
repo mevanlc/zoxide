@@ -86,6 +86,13 @@ Add this to the \fBend\fR of your config file:
 .fi
 .SH OPTIONS
 .TP
+.B --bind-fzf-insert KEYSPEC
+For Bash, Zsh, Fish, and Nushell, bind an ASCII control letter to open zoxide's
+interactive directory picker and insert the selected path into the command line.
+The key specification uses caret notation, for example \fB^g\fR. This option is
+not supported for other shells. Bash also does not support \fB^z\fR for this
+binding.
+.TP
 .B --cmd
 Changes the prefix of the \fBz\fR and \fBzi\fR commands.
 .br

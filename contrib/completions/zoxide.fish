@@ -1,27 +1,27 @@
 # Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
 function __fish_zoxide_global_optspecs
-	string join \n h/help V/version
+    string join \n h/help V/version
 end
 
 function __fish_zoxide_needs_command
-	# Figure out if the current invocation already has a command.
-	set -l cmd (commandline -opc)
-	set -e cmd[1]
-	argparse -s (__fish_zoxide_global_optspecs) -- $cmd 2>/dev/null
-	or return
-	if set -q argv[1]
-		# Also print the command, so this can be used to figure out what it is.
-		echo $argv[1]
-		return 1
-	end
-	return 0
+    # Figure out if the current invocation already has a command.
+    set -l cmd (commandline -opc)
+    set -e cmd[1]
+    argparse -s (__fish_zoxide_global_optspecs) -- $cmd 2>/dev/null
+    or return
+    if set -q argv[1]
+        # Also print the command, so this can be used to figure out what it is.
+        echo $argv[1]
+        return 1
+    end
+    return 0
 end
 
 function __fish_zoxide_using_subcommand
-	set -l cmd (__fish_zoxide_needs_command)
-	test -z "$cmd"
-	and return 1
-	contains -- $cmd[1] $argv
+    set -l cmd (__fish_zoxide_needs_command)
+    test -z "$cmd"
+    and return 1
+    contains -- $cmd[1] $argv
 end
 
 complete -c zoxide -n "__fish_zoxide_needs_command" -s h -l help -d 'Print help'
@@ -81,6 +81,7 @@ complete -c zoxide -n "__fish_zoxide_using_subcommand import; and __fish_seen_su
 complete -c zoxide -n "__fish_zoxide_using_subcommand import; and __fish_seen_subcommand_from zsh-z" -l merge -d 'Merge into existing database'
 complete -c zoxide -n "__fish_zoxide_using_subcommand import; and __fish_seen_subcommand_from zsh-z" -s h -l help -d 'Print help'
 complete -c zoxide -n "__fish_zoxide_using_subcommand import; and __fish_seen_subcommand_from zsh-z" -s V -l version -d 'Print version'
+complete -c zoxide -n "__fish_zoxide_using_subcommand init" -l bind-fzf-insert -d 'Binds a control key (e.g. \'^g\') to interactively select and insert a directory' -r
 complete -c zoxide -n "__fish_zoxide_using_subcommand init" -l cmd -d 'Changes the prefix of the `z` and `zi` commands' -r
 complete -c zoxide -n "__fish_zoxide_using_subcommand init" -l hook -d 'Changes how often zoxide increments a directory\'s score' -r -f -a "none\t''
 prompt\t''

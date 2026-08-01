@@ -113,6 +113,22 @@ function __zoxide_zi
     and __zoxide_cd $result
 end
 
+{%- if let Some(binding) = bind_fzf_insert %}
+
+{{ section }}
+# Key bindings.
+#
+
+# Interactively select a directory and paste it into the command line.
+function __zoxide_fzf_insert
+    set -l result (command zoxide query --interactive --)
+    and builtin commandline --replace --current-token -- (string escape -n -- $result)' '
+    builtin commandline --function repaint
+end
+bind {{ binding.fish }} __zoxide_fzf_insert
+bind --mode insert {{ binding.fish }} __zoxide_fzf_insert
+{%- endif %}
+
 {{ section }}
 # Commands for zoxide. Disable these using --no-cmd.
 #

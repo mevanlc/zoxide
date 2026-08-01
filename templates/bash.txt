@@ -138,6 +138,49 @@ function __zoxide_zi() {
     result="$(\command zoxide query --interactive -- "$@")" && __zoxide_cd "${result}"
 }
 
+{%- if let Some(binding) = bind_fzf_insert %}
+
+{{ section }}
+# Key bindings.
+#
+
+# Interactively select a directory and paste it into the command line.
+function __zoxide_fzf_insert_select() {
+    __zoxide_doctor
+    \builtin local result
+    result="$(\command zoxide query --interactive --)" || return
+    \builtin printf '%q ' "${result}"
+}
+
+if [[ $- == *i* ]]; then
+    # Required to refresh the prompt after fzf.
+    bind -m emacs-standard '"\C-\e(": redraw-current-line'
+
+    if ((BASH_VERSINFO[0] < 4)); then
+        # Bash 3 does not expose READLINE_LINE, so use the same command-line
+        # expansion technique as fzf's Bash 3 CTRL-T binding.
+        bind -m vi-command '"\C-z": emacs-editing-mode'
+        bind -m vi-insert '"\C-z": emacs-editing-mode'
+        bind -m emacs-standard '"\C-z": vi-editing-mode'
+        # shellcheck disable=SC2016
+        bind -m emacs-standard '"{{ binding.bash }}": " \C-b\C-k \C-u`__zoxide_fzf_insert_select`\e\C-e\C-\e(\C-a\C-y\C-h\C-e\e \C-y\ey\C-x\C-x\C-f\C-y\ey\C-_"'
+        bind -m vi-command '"{{ binding.bash }}": "\C-z{{ binding.bash }}\C-z"'
+        bind -m vi-insert '"{{ binding.bash }}": "\C-z{{ binding.bash }}\C-z"'
+    else
+        function __zoxide_fzf_insert() {
+            \builtin local selected
+            selected="$(__zoxide_fzf_insert_select)" || return
+            READLINE_LINE="${READLINE_LINE:0:READLINE_POINT}${selected}${READLINE_LINE:READLINE_POINT}"
+            READLINE_POINT=$((READLINE_POINT + {{ "${#selected}" }}))
+        }
+
+        bind -m emacs-standard -x '"{{ binding.bash }}": __zoxide_fzf_insert'
+        bind -m vi-command -x '"{{ binding.bash }}": __zoxide_fzf_insert'
+        bind -m vi-insert -x '"{{ binding.bash }}": __zoxide_fzf_insert'
+    fi
+fi
+{%- endif %}
+
 {{ section }}
 # Commands for zoxide. Disable these using --no-cmd.
 #

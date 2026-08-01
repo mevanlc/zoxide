@@ -111,6 +111,7 @@ module completions {
 
   # Generate shell configuration
   export extern "zoxide init" [
+    --bind-fzf-insert: string # Binds a control key (e.g. '^g') to interactively select and insert a directory
     --no-cmd                  # Prevents zoxide from defining the `z` and `zi` commands
     --cmd: string             # Changes the prefix of the `z` and `zi` commands
     --hook: string@"nu-complete zoxide init hook" # Changes how often zoxide increments a directory's score

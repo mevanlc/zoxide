@@ -184,6 +184,7 @@ esac
 ;;
 (init)
 _arguments "${_arguments_options[@]}" : \
+'--bind-fzf-insert=[Binds a control key (e.g. '\''^g'\'') to interactively select and insert a directory]:keyspec:_default' \
 '--cmd=[Changes the prefix of the \`z\` and \`zi\` commands]:CMD:_default' \
 '--hook=[Changes how often zoxide increments a directory'\''s score]:HOOK:(none prompt pwd)' \
 '--no-cmd[Prevents zoxide from defining the \`z\` and \`zi\` commands]' \

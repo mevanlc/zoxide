@@ -79,6 +79,41 @@ export def --env --wrapped __zoxide_zi [...rest: string] {
 {%- endif %}
 }
 
+{%- if let Some(binding) = bind_fzf_insert %}
+
+{{ section }}
+# Key bindings.
+#
+
+# Interactively select a directory and paste it into the command line.
+const __zoxide_fzf_insert = {
+  name: zoxide_fzf_insert
+  modifier: control
+  keycode: {{ binding.nushell }}
+  mode: [emacs, vi_normal, vi_insert]
+  event: [
+    {
+      send: executehostcommand
+      cmd: "
+        let result = (^zoxide query --interactive -- | str trim -r -c \\"\\n\\");
+        if ($result | is-not-empty) {
+          commandline edit --append $result;
+          commandline set-cursor --end
+        }
+      "
+    }
+  ]
+}
+
+export-env {
+  $env.config.keybindings = (
+    $env.config.keybindings
+    | where { |binding| $binding.name != 'zoxide_fzf_insert' }
+    | append $__zoxide_fzf_insert
+  )
+}
+{%- endif %}
+
 {{ section }}
 # Commands for zoxide. Disable these using --no-cmd.
 #

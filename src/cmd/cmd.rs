@@ -157,6 +157,10 @@ pub struct Init {
     #[clap(value_enum)]
     pub shell: InitShell,
 
+    /// Binds a control key (e.g. '^g') to interactively select and insert a directory
+    #[clap(long, value_name = "keyspec")]
+    pub bind_fzf_insert: Option<String>,
+
     /// Prevents zoxide from defining the `z` and `zi` commands
     #[clap(long, alias = "no-aliases")]
     pub no_cmd: bool,

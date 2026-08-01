@@ -271,6 +271,15 @@ const completion: Fig.Spec = {
       description: "Generate shell configuration",
       options: [
         {
+          name: "--bind-fzf-insert",
+          description: "Binds a control key (e.g. '^g') to interactively select and insert a directory",
+          isRepeatable: true,
+          args: {
+            name: "bind_fzf_insert",
+            isOptional: true,
+          },
+        },
+        {
           name: "--cmd",
           description: "Changes the prefix of the `z` and `zi` commands",
           isRepeatable: true,

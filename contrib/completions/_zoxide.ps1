@@ -156,6 +156,7 @@ Register-ArgumentCompleter -Native -CommandName 'zoxide' -ScriptBlock {
             break
         }
         'zoxide;init' {
+            [CompletionResult]::new('--bind-fzf-insert', '--bind-fzf-insert', [CompletionResultType]::ParameterName, 'Binds a control key (e.g. ''^g'') to interactively select and insert a directory')
             [CompletionResult]::new('--cmd', '--cmd', [CompletionResultType]::ParameterName, 'Changes the prefix of the `z` and `zi` commands')
             [CompletionResult]::new('--hook', '--hook', [CompletionResultType]::ParameterName, 'Changes how often zoxide increments a directory''s score')
             [CompletionResult]::new('--no-cmd', '--no-cmd', [CompletionResultType]::ParameterName, 'Prevents zoxide from defining the `z` and `zi` commands')

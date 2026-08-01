@@ -12,9 +12,27 @@ This fork follows upstream zoxide, merging it in periodically, and adds:
 - a `dedupe` subcommand that merges database entries naming the same directory
   under different spellings, so their scores stop competing; and
 - `_ZO_MATCH_TRAILING_SLASH`, which lets a trailing slash in a query match the
-  end of a directory path.
+  end of a directory path; and
+- `zoxide init --bind-fzf-insert`, which binds a control key to insert a
+  directory selected from zoxide's interactive picker.
 
 Everything else behaves like upstream zoxide as of the most recent merge.
+
+### `zoxide init --bind-fzf-insert`
+
+For Bash, Zsh, Fish, and Nushell, `zoxide init` can bind a control key to open
+the same interactive directory picker as `zi`, then insert the selected path
+into the command line instead of changing directories:
+
+```sh
+eval "$(zoxide init zsh --bind-fzf-insert '^g')"
+```
+
+The key specification uses caret notation and must name an ASCII control letter
+(case-insensitive). Each shell follows fzf's Ctrl-T insertion behavior and
+native path escaping. The option is rejected for other shells. Bash also rejects
+`^z`, which fzf's Bash 3 compatibility mechanism reserves for switching Readline
+keymaps.
 
 ### `zoxide dedupe`
 

@@ -109,6 +109,32 @@ function __zoxide_zi() {
     result="$(\command zoxide query --interactive -- "$@")" && __zoxide_cd "${result}"
 }
 
+{%- if let Some(binding) = bind_fzf_insert %}
+
+{{ section }}
+# Key bindings.
+#
+
+# Interactively select a directory and paste it into the command line.
+function __zoxide_fzf_insert() {
+    setopt localoptions pipefail no_aliases 2>/dev/null
+    \builtin local result
+    result="$(\command zoxide query --interactive -- < /dev/tty)"
+    \builtin local ret=$?
+    if [[ ${ret} -eq 0 && -n ${result} ]]; then
+        LBUFFER="${LBUFFER}${(q)result} "
+    fi
+    \builtin zle reset-prompt
+    return ${ret}
+}
+if [[ -o zle ]]; then
+    \builtin zle -N __zoxide_fzf_insert
+    \builtin bindkey -M emacs '{{ binding.zsh }}' __zoxide_fzf_insert
+    \builtin bindkey -M vicmd '{{ binding.zsh }}' __zoxide_fzf_insert
+    \builtin bindkey -M viins '{{ binding.zsh }}' __zoxide_fzf_insert
+fi
+{%- endif %}
+
 {{ section }}
 # Commands for zoxide. Disable these using --no-cmd.
 #
