@@ -22,7 +22,8 @@ left untouched, as are entries whose directories no longer exist (see
 .sp
 PATHGLOBS select which entries are processed, and are matched against the
 full stored path (the same matching as \fB_ZO_EXCLUDE_DIRS\fR, described in
-\fBzoxide\fR(1)). Use \fB'*'\fR to process the whole database.
+\fBzoxide\fR(1)). When no PATHGLOBS are supplied, \fB'*'\fR is used to process
+the whole database.
 .SH OPTIONS
 .TP
 .B -i, --assume-insensitive

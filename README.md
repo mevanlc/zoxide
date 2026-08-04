@@ -44,14 +44,14 @@ entry whose rank is the group's sum and whose access time is the group's most
 recent.
 
 ```sh
-zoxide dedupe -n '*'          # show what the whole database would merge
-zoxide dedupe '*'             # merge it
+zoxide dedupe -n              # show what the whole database would merge
+zoxide dedupe                 # merge it
 zoxide dedupe "$HOME/src/*"   # restrict to one subtree
-zoxide dedupe -i '*'          # skip the filesystem check (see below)
+zoxide dedupe -i              # skip the filesystem check (see below)
 ```
 
 ```console
-$ zoxide dedupe -n '*'
+$ zoxide dedupe -n
 would merge into /Users/alice/Projects:
   /Users/alice/projects
 would merge 2 entries into 1 directory
@@ -68,11 +68,10 @@ directory are merged — on a case-sensitive filesystem where `Projects` and
 takes the on-disk spelling when the platform can report it, and otherwise the
 highest-ranked spelling in the group.
 
-The `<pathglob>...` argument is required, and is matched against the full
-stored path using the same glob matcher as `_ZO_EXCLUDE_DIRS`. `*` crosses path
-separators, so `'*'` selects the whole database. Requiring an explicit selector
-is deliberate: merging discards spellings and sums scores, and cannot be
-undone. Quote the globs so the shell does not expand them first.
+The optional `<pathglob>...` arguments are matched against the full stored path
+using the same glob matcher as `_ZO_EXCLUDE_DIRS`. With no arguments, the glob
+defaults to `*`, which crosses path separators and selects the whole database.
+Quote any supplied globs so the shell does not expand them first.
 
 Options:
 

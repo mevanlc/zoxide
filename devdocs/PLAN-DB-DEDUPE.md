@@ -24,13 +24,13 @@ that receives the group's combined score. Groups of size 1 are untouched.
 Merge database entries that refer to the same directory
 
 Usage:
-  zoxide dedupe [OPTIONS] <pathglob>...
+  zoxide dedupe [OPTIONS] [pathglob]...
 
 Arguments:
-  <pathglob>...  Globs selecting which entries to process; entries matching no
-                 glob are ignored. Patterns match against the full stored path
-                 (same matcher as _ZO_EXCLUDE_DIRS). Use '*' to process the
-                 whole database. Wildcards are not required.
+  [pathglob]...  Globs selecting which entries to process; entries matching no
+                glob are ignored. Patterns match against the full stored path
+                (same matcher as _ZO_EXCLUDE_DIRS). Defaults to '*' to process
+                the whole database. Wildcards are not required.
 
 Options:
   -i, --assume-insensitive  Do not consult the filesystem; merge entries that
@@ -48,9 +48,8 @@ Decisions baked into the above:
   (byte-exact merge after imports); this command is its user-facing,
   equivalence-aware generalization. Not case-specific in name, because the
   duplicates it fixes are not always case variants (NFC/NFD).
-- **Positional is required.** Merging is lossy (spellings are discarded,
-  scores summed), so processing the whole database requires typing an explicit
-  `'*'` rather than being the zero-argument default.
+- **Positional defaults to `'*'`.** With no selector, the whole database is
+  processed. Explicit globs still restrict the working set.
 - **No `--check-fs-case-sensitivity` flag.** Earlier drafts gated merging on a
   per-filesystem case-sensitivity probe. Testing showed that primitive is
   unsound — see [Why we probe paths, not filesystems](#why-we-probe-paths-not-filesystems).

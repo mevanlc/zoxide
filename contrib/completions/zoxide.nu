@@ -20,7 +20,7 @@ module completions {
     --dry-run(-n)             # Show what would be merged without modifying the database
     --help(-h)                # Print help
     --version(-V)             # Print version
-    ...pathglobs: path        # Globs selecting which entries to process, matched against the full stored path. Use '*' to process the whole database
+    ...pathglobs: path        # Globs selecting which entries to process, matched against the full stored path. Defaults to '*' to process the whole database
   ]
 
   # Edit the database

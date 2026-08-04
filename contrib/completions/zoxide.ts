@@ -54,6 +54,7 @@ const completion: Fig.Spec = {
       args: {
         name: "pathglobs",
         isVariadic: true,
+        isOptional: true,
         template: "folders",
       },
     },

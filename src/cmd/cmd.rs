@@ -75,8 +75,8 @@ pub struct Add {
 )]
 pub struct Dedupe {
     /// Globs selecting which entries to process, matched against the full
-    /// stored path. Use '*' to process the whole database
-    #[clap(num_args = 1.., required = true, value_name = "pathglob", value_hint = ValueHint::DirPath)]
+    /// stored path. Defaults to '*' to process the whole database
+    #[clap(default_value = "*", num_args = 1.., value_name = "pathglob", value_hint = ValueHint::DirPath)]
     pub pathglobs: Vec<String>,
 
     /// Do not consult the filesystem: merge all entries that are textually
@@ -238,4 +238,23 @@ pub struct Query {
 pub struct Remove {
     #[clap(value_hint = ValueHint::DirPath)]
     pub paths: Vec<String>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dedupe_pathglobs_default_to_star() {
+        let cmd = Dedupe::try_parse_from(["dedupe"]).unwrap();
+
+        assert_eq!(cmd.pathglobs, ["*"]);
+    }
+
+    #[test]
+    fn dedupe_supplied_pathglobs_replace_default() {
+        let cmd = Dedupe::try_parse_from(["dedupe", "/foo/*", "/bar/*"]).unwrap();
+
+        assert_eq!(cmd.pathglobs, ["/foo/*", "/bar/*"]);
+    }
 }
