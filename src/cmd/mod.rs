@@ -1,11 +1,11 @@
 mod add;
 mod cmd;
-mod dedupe;
 mod edit;
 mod import;
 mod init;
 mod query;
 mod remove;
+mod tidy;
 
 use anyhow::Result;
 
@@ -19,12 +19,12 @@ impl Run for Cmd {
     fn run(&self) -> Result<()> {
         match self {
             Cmd::Add(cmd) => cmd.run(),
-            Cmd::Dedupe(cmd) => cmd.run(),
             Cmd::Edit(cmd) => cmd.run(),
             Cmd::Import(cmd) => cmd.run(),
             Cmd::Init(cmd) => cmd.run(),
             Cmd::Query(cmd) => cmd.run(),
             Cmd::Remove(cmd) => cmd.run(),
+            Cmd::Tidy(cmd) => cmd.run(),
         }
     }
 }

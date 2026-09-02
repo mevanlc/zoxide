@@ -195,12 +195,25 @@ impl Database {
         self.with_dirty_mut(|dirty| *dirty = true);
     }
 
-    /// Replaces the path of the entry at `idx`.
-    pub fn set_path(&mut self, idx: usize, path: impl AsRef<str> + Into<String>) {
-        if self.dirs()[idx].path == path.as_ref() {
+    /// Replaces every database entry while avoiding a write when the contents
+    /// are unchanged.
+    pub fn replace_dirs(&mut self, entries: Vec<(String, Rank, Epoch)>) {
+        let unchanged = self.dirs().len() == entries.len()
+            && self.dirs().iter().zip(&entries).all(|(dir, (path, rank, last_accessed))| {
+                dir.path == *path
+                    && dir.rank.to_bits() == rank.to_bits()
+                    && dir.last_accessed == *last_accessed
+            });
+        if unchanged {
             return;
         }
-        self.with_dirs_mut(|dirs| dirs[idx].path = path.into().into());
+
+        self.with_dirs_mut(|dirs| {
+            *dirs = entries
+                .into_iter()
+                .map(|(path, rank, last_accessed)| Dir { path: path.into(), rank, last_accessed })
+                .collect();
+        });
         self.with_dirty_mut(|dirty| *dirty = true);
     }
 

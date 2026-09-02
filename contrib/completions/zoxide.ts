@@ -31,34 +31,6 @@ const completion: Fig.Spec = {
       },
     },
     {
-      name: "dedupe",
-      description: "Merge database entries that refer to the same directory",
-      options: [
-        {
-          name: ["-i", "--assume-insensitive"],
-          description: "Do not consult the filesystem: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems",
-        },
-        {
-          name: ["-n", "--dry-run"],
-          description: "Show what would be merged without modifying the database",
-        },
-        {
-          name: ["-h", "--help"],
-          description: "Print help",
-        },
-        {
-          name: ["-V", "--version"],
-          description: "Print version",
-        },
-      ],
-      args: {
-        name: "pathglobs",
-        isVariadic: true,
-        isOptional: true,
-        template: "folders",
-      },
-    },
-    {
       name: "edit",
       description: "Edit the database",
       subcommands: [
@@ -409,6 +381,57 @@ const completion: Fig.Spec = {
       ],
       args: {
         name: "paths",
+        isVariadic: true,
+        isOptional: true,
+        template: "folders",
+      },
+    },
+    {
+      name: "tidy",
+      description: "Repair and clean up database paths",
+      options: [
+        {
+          name: ["-d", "--dedupe"],
+          description: "Merge different spellings of the same filesystem entry",
+        },
+        {
+          name: "--normalize",
+          description: "Rewrite stored paths using their on-disk spelling",
+        },
+        {
+          name: ["-p", "--prune"],
+          description: "Remove stored paths that no longer resolve to directories",
+        },
+        {
+          name: ["-a", "--all"],
+          description: "Prune, normalize, and deduplicate",
+          exclusiveOn: [
+            "-d",
+            "--dedupe",
+            "--normalize",
+            "-p",
+            "--prune",
+          ],
+        },
+        {
+          name: ["-i", "--assume-insensitive"],
+          description: "During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems",
+        },
+        {
+          name: ["-n", "--dry-run"],
+          description: "Show what would change without modifying the database",
+        },
+        {
+          name: ["-h", "--help"],
+          description: "Print help",
+        },
+        {
+          name: ["-V", "--version"],
+          description: "Print version",
+        },
+      ],
+      args: {
+        name: "pathglobs",
         isVariadic: true,
         isOptional: true,
         template: "folders",

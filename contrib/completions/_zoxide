@@ -39,19 +39,6 @@ _arguments "${_arguments_options[@]}" : \
 '*::paths:_files -/' \
 && ret=0
 ;;
-(dedupe)
-_arguments "${_arguments_options[@]}" : \
-'-i[Do not consult the filesystem\: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
-'--assume-insensitive[Do not consult the filesystem\: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
-'-n[Show what would be merged without modifying the database]' \
-'--dry-run[Show what would be merged without modifying the database]' \
-'-h[Print help]' \
-'--help[Print help]' \
-'-V[Print version]' \
-'--version[Print version]' \
-'*::pathglobs -- Globs selecting which entries to process, matched against the full stored path. Defaults to '\''*'\'' to process the whole database:_files -/' \
-&& ret=0
-;;
 (edit)
 _arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
@@ -223,6 +210,26 @@ _arguments "${_arguments_options[@]}" : \
 '*::paths:_files -/' \
 && ret=0
 ;;
+(tidy)
+_arguments "${_arguments_options[@]}" : \
+'-d[Merge different spellings of the same filesystem entry]' \
+'--dedupe[Merge different spellings of the same filesystem entry]' \
+'--normalize[Rewrite stored paths using their on-disk spelling]' \
+'-p[Remove stored paths that no longer resolve to directories]' \
+'--prune[Remove stored paths that no longer resolve to directories]' \
+'(-d --dedupe --normalize -p --prune)-a[Prune, normalize, and deduplicate]' \
+'(-d --dedupe --normalize -p --prune)--all[Prune, normalize, and deduplicate]' \
+'-i[During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
+'--assume-insensitive[During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
+'-n[Show what would change without modifying the database]' \
+'--dry-run[Show what would change without modifying the database]' \
+'-h[Print help]' \
+'--help[Print help]' \
+'-V[Print version]' \
+'--version[Print version]' \
+'*::pathglobs -- Globs selecting which entries to process, matched against the full stored path. Defaults to '\''*'\'' to process the whole database:_files -/' \
+&& ret=0
+;;
         esac
     ;;
 esac
@@ -232,12 +239,12 @@ esac
 _zoxide_commands() {
     local commands; commands=(
 'add:Add a new directory or increment its rank' \
-'dedupe:Merge database entries that refer to the same directory' \
 'edit:Edit the database' \
 'import:Import entries from another application' \
 'init:Generate shell configuration' \
 'query:Search for a directory in the database' \
 'remove:Remove a directory from the database' \
+'tidy:Repair and clean up database paths' \
     )
     _describe -t commands 'zoxide commands' commands "$@"
 }
@@ -245,11 +252,6 @@ _zoxide_commands() {
 _zoxide__subcmd__add_commands() {
     local commands; commands=()
     _describe -t commands 'zoxide add commands' commands "$@"
-}
-(( $+functions[_zoxide__subcmd__dedupe_commands] )) ||
-_zoxide__subcmd__dedupe_commands() {
-    local commands; commands=()
-    _describe -t commands 'zoxide dedupe commands' commands "$@"
 }
 (( $+functions[_zoxide__subcmd__edit_commands] )) ||
 _zoxide__subcmd__edit_commands() {
@@ -337,6 +339,11 @@ _zoxide__subcmd__query_commands() {
 _zoxide__subcmd__remove_commands() {
     local commands; commands=()
     _describe -t commands 'zoxide remove commands' commands "$@"
+}
+(( $+functions[_zoxide__subcmd__tidy_commands] )) ||
+_zoxide__subcmd__tidy_commands() {
+    local commands; commands=()
+    _describe -t commands 'zoxide tidy commands' commands "$@"
 }
 
 if [ "$funcstack[1]" = "_zoxide" ]; then

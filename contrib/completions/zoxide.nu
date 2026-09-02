@@ -14,15 +14,6 @@ module completions {
     ...paths: directory
   ]
 
-  # Merge database entries that refer to the same directory
-  export extern "zoxide dedupe" [
-    --assume-insensitive(-i)  # Do not consult the filesystem: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems
-    --dry-run(-n)             # Show what would be merged without modifying the database
-    --help(-h)                # Print help
-    --version(-V)             # Print version
-    ...pathglobs: directory   # Globs selecting which entries to process, matched against the full stored path. Defaults to '*' to process the whole database
-  ]
-
   # Edit the database
   export extern "zoxide edit" [
     --help(-h)                # Print help
@@ -138,6 +129,19 @@ module completions {
     --help(-h)                # Print help
     --version(-V)             # Print version
     ...paths: directory
+  ]
+
+  # Repair and clean up database paths
+  export extern "zoxide tidy" [
+    --dedupe(-d)              # Merge different spellings of the same filesystem entry
+    --normalize               # Rewrite stored paths using their on-disk spelling
+    --prune(-p)               # Remove stored paths that no longer resolve to directories
+    --all(-a)                 # Prune, normalize, and deduplicate
+    --assume-insensitive(-i)  # During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems
+    --dry-run(-n)             # Show what would change without modifying the database
+    --help(-h)                # Print help
+    --version(-V)             # Print version
+    ...pathglobs: directory   # Globs selecting which entries to process, matched against the full stored path. Defaults to '*' to process the whole database
   ]
 
 }

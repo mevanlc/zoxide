@@ -1219,7 +1219,6 @@ dependencies = [
  "dunce",
  "fastrand",
  "glob",
- "libc",
  "ouroboros",
  "rstest",
  "rstest_reuse",

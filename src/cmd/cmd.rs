@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 
 use clap::builder::{IntoResettable, Resettable, StyledStr};
-use clap::{Parser, Subcommand, ValueEnum, ValueHint};
+use clap::{ArgGroup, Parser, Subcommand, ValueEnum, ValueHint};
 
 struct HelpTemplate;
 
@@ -43,12 +43,12 @@ https://github.com/ajeetdsouza/zoxide
 )]
 pub enum Cmd {
     Add(Add),
-    Dedupe(Dedupe),
     Edit(Edit),
     Import(Import),
     Init(Init),
     Query(Query),
     Remove(Remove),
+    Tidy(Tidy),
 }
 
 /// Add a new directory or increment its rank
@@ -67,26 +67,52 @@ pub struct Add {
     pub score: Option<f64>,
 }
 
-/// Merge database entries that refer to the same directory
+/// Repair and clean up database paths
 #[derive(Debug, Parser)]
 #[clap(
     author,
     help_template = HelpTemplate,
+    group(
+        ArgGroup::new("action")
+            .required(true)
+            .multiple(true)
+            .args(["dedupe", "normalize", "prune", "all"])
+    ),
+    group(
+        ArgGroup::new("dedupe_action")
+            .args(["dedupe", "all"])
+    ),
 )]
-pub struct Dedupe {
+pub struct Tidy {
     /// Globs selecting which entries to process, matched against the full
     /// stored path. Defaults to '*' to process the whole database
     #[clap(default_value = "*", num_args = 1.., value_name = "pathglob", value_hint = ValueHint::DirPath)]
     pub pathglobs: Vec<String>,
 
-    /// Do not consult the filesystem: merge all entries that are textually
-    /// equivalent (Unicode case fold + NFC). Required to merge entries whose
-    /// directories no longer exist; can merge genuinely distinct directories
-    /// on case-sensitive filesystems
-    #[clap(long, short = 'i')]
+    /// Merge different spellings of the same filesystem entry
+    #[clap(long, short = 'd')]
+    pub dedupe: bool,
+
+    /// Rewrite stored paths using their on-disk spelling
+    #[clap(long)]
+    pub normalize: bool,
+
+    /// Remove stored paths that no longer resolve to directories
+    #[clap(long, short = 'p')]
+    pub prune: bool,
+
+    /// Prune, normalize, and deduplicate
+    #[clap(long, short = 'a', conflicts_with_all = ["dedupe", "normalize", "prune"])]
+    pub all: bool,
+
+    /// During deduplication, skip filesystem identity checks and merge all
+    /// entries that are textually equivalent (Unicode case fold + NFC).
+    /// Required to merge entries whose directories no longer exist; can merge
+    /// genuinely distinct directories on case-sensitive filesystems
+    #[clap(long, short = 'i', requires = "dedupe_action")]
     pub assume_insensitive: bool,
 
-    /// Show what would be merged without modifying the database
+    /// Show what would change without modifying the database
     #[clap(long, short = 'n')]
     pub dry_run: bool,
 }
@@ -245,16 +271,33 @@ mod tests {
     use super::*;
 
     #[test]
-    fn dedupe_pathglobs_default_to_star() {
-        let cmd = Dedupe::try_parse_from(["dedupe"]).unwrap();
+    fn tidy_pathglobs_default_to_star() {
+        let cmd = Tidy::try_parse_from(["tidy", "--dedupe"]).unwrap();
 
         assert_eq!(cmd.pathglobs, ["*"]);
     }
 
     #[test]
-    fn dedupe_supplied_pathglobs_replace_default() {
-        let cmd = Dedupe::try_parse_from(["dedupe", "/foo/*", "/bar/*"]).unwrap();
+    fn tidy_supplied_pathglobs_replace_default() {
+        let cmd = Tidy::try_parse_from(["tidy", "--normalize", "/foo/*", "/bar/*"]).unwrap();
 
         assert_eq!(cmd.pathglobs, ["/foo/*", "/bar/*"]);
+    }
+
+    #[test]
+    fn tidy_requires_an_action() {
+        assert!(Tidy::try_parse_from(["tidy"]).is_err());
+    }
+
+    #[test]
+    fn tidy_all_conflicts_with_individual_actions() {
+        assert!(Tidy::try_parse_from(["tidy", "--all", "--prune"]).is_err());
+    }
+
+    #[test]
+    fn tidy_assume_insensitive_requires_dedupe() {
+        assert!(Tidy::try_parse_from(["tidy", "--prune", "-i"]).is_err());
+        assert!(Tidy::try_parse_from(["tidy", "--dedupe", "-i"]).is_ok());
+        assert!(Tidy::try_parse_from(["tidy", "--all", "-i"]).is_ok());
     }
 }

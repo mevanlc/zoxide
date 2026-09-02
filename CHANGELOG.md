@@ -13,10 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `zoxide init --bind-fzf-insert` for Bash, Zsh, Fish, and Nushell: binds a
   control key to insert a directory from zoxide's interactive picker.
-- `dedupe` subcommand: merges database entries that refer to the same
-  directory under different spellings (case or Unicode normalization
-  variants), combining their scores. Its path glob now defaults to `*` when
-  omitted.
+- `tidy` subcommand: prunes unavailable directories, corrects every resolvable
+  component of stored paths to its on-disk spelling, and merges entries that
+  refer to the same directory under different spellings. Actions can be run
+  separately or together and support whole-path glob selection and dry runs.
 
 ## [0.10.0] - 2026-07-04
 

@@ -23,26 +23,16 @@ set edit:completion:arg-completer[zoxide] = {|@words|
             cand -V 'Print version'
             cand --version 'Print version'
             cand add 'Add a new directory or increment its rank'
-            cand dedupe 'Merge database entries that refer to the same directory'
             cand edit 'Edit the database'
             cand import 'Import entries from another application'
             cand init 'Generate shell configuration'
             cand query 'Search for a directory in the database'
             cand remove 'Remove a directory from the database'
+            cand tidy 'Repair and clean up database paths'
         }
         &'zoxide;add'= {
             cand -s 'The rank to increment the entry if it exists or initialize it with if it doesn''t'
             cand --score 'The rank to increment the entry if it exists or initialize it with if it doesn''t'
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand -V 'Print version'
-            cand --version 'Print version'
-        }
-        &'zoxide;dedupe'= {
-            cand -i 'Do not consult the filesystem: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
-            cand --assume-insensitive 'Do not consult the filesystem: merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
-            cand -n 'Show what would be merged without modifying the database'
-            cand --dry-run 'Show what would be merged without modifying the database'
             cand -h 'Print help'
             cand --help 'Print help'
             cand -V 'Print version'
@@ -164,6 +154,23 @@ set edit:completion:arg-completer[zoxide] = {|@words|
             cand --version 'Print version'
         }
         &'zoxide;remove'= {
+            cand -h 'Print help'
+            cand --help 'Print help'
+            cand -V 'Print version'
+            cand --version 'Print version'
+        }
+        &'zoxide;tidy'= {
+            cand -d 'Merge different spellings of the same filesystem entry'
+            cand --dedupe 'Merge different spellings of the same filesystem entry'
+            cand --normalize 'Rewrite stored paths using their on-disk spelling'
+            cand -p 'Remove stored paths that no longer resolve to directories'
+            cand --prune 'Remove stored paths that no longer resolve to directories'
+            cand -a 'Prune, normalize, and deduplicate'
+            cand --all 'Prune, normalize, and deduplicate'
+            cand -i 'During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
+            cand --assume-insensitive 'During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
+            cand -n 'Show what would change without modifying the database'
+            cand --dry-run 'Show what would change without modifying the database'
             cand -h 'Print help'
             cand --help 'Print help'
             cand -V 'Print version'

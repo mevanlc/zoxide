@@ -1,0 +1,60 @@
+.TH "ZOXIDE" "1" "2026-09-02" "" "zoxide"
+.SH NAME
+\fBzoxide-tidy\fR - repair and clean up database paths
+.SH SYNOPSIS
+.B zoxide tidy [OPTIONS] [PATHGLOBS]
+.SH DESCRIPTION
+\fBzoxide tidy\fR performs one or more explicit database maintenance actions.
+It can remove paths that are no longer navigable, rewrite stored paths using
+their on-disk spelling, and merge different spellings of the same directory.
+It never renames filesystem objects.
+.sp
+At least one action must be selected. PATHGLOBS match original full stored
+paths using the same matcher as \fB_ZO_EXCLUDE_DIRS\fR. When no PATHGLOBS are
+supplied, \fB'*'\fR selects the whole database.
+.SH ACTIONS
+.TP
+.B -d, --dedupe
+Merge textually equivalent entries that the filesystem confirms name the same
+directory. Ranks are summed and the newest access time is retained.
+.TP
+.B --normalize
+Rewrite stored paths using the exact spelling of every resolvable filesystem
+component. Existing parent components are corrected when a later component is
+missing. Symlink aliases are preserved. Exact collisions created by
+normalization are merged so scores remain combined.
+.TP
+.B -p, --prune
+Remove paths that no longer resolve to directories, including missing paths,
+paths replaced by files, and dangling symlinks. Symlinks resolving to live
+directories are retained.
+.TP
+.B -a, --all
+Prune, normalize, and deduplicate, in that order. This option conflicts with the
+individual action selectors.
+.SH OPTIONS
+.TP
+.B -i, --assume-insensitive
+For deduplication, skip filesystem identity confirmation and merge every group
+that is equivalent under full Unicode case folding plus canonical
+normalization. This can merge genuinely distinct directories on case-sensitive
+filesystems. Requires \fB--dedupe\fR or \fB--all\fR.
+.TP
+.B -n, --dry-run
+Report what would change without modifying the database.
+.TP
+.B -h, --help
+Print help information.
+.TP
+.B -V, --version
+Print version information.
+.SH DIAGNOSTICS
+Changes and summaries are printed to standard output in deterministic order.
+Unexpected filesystem errors leave affected entries unchanged, produce warnings
+on standard error, and do not prevent other entries from being processed.
+.SH REPORTING BUGS
+For any issues, feature requests, or questions, please visit:
+.sp
+\fBhttps://github.com/ajeetdsouza/zoxide/issues\fR
+.SH AUTHOR
+Ajeet D'Souza \fB<98ajeet@gmail.com>\fR
