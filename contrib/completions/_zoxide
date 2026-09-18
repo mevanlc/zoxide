@@ -220,7 +220,7 @@ _arguments "${_arguments_options[@]}" : \
 '(-d --dedupe --normalize -p --prune)-a[Prune, normalize, and deduplicate]' \
 '(-d --dedupe --normalize -p --prune)--all[Prune, normalize, and deduplicate]' \
 '-i[During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
-'--assume-insensitive[During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
+'--ignore-case[During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems]' \
 '-n[Show what would change without modifying the database]' \
 '--dry-run[Show what would change without modifying the database]' \
 '-h[Print help]' \

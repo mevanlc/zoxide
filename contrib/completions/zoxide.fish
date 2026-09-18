@@ -1,27 +1,27 @@
 # Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
 function __fish_zoxide_global_optspecs
-    string join \n h/help V/version
+	string join \n h/help V/version
 end
 
 function __fish_zoxide_needs_command
-    # Figure out if the current invocation already has a command.
-    set -l cmd (commandline -opc)
-    set -e cmd[1]
-    argparse -s (__fish_zoxide_global_optspecs) -- $cmd 2>/dev/null
-    or return
-    if set -q argv[1]
-        # Also print the command, so this can be used to figure out what it is.
-        echo $argv[1]
-        return 1
-    end
-    return 0
+	# Figure out if the current invocation already has a command.
+	set -l cmd (commandline -opc)
+	set -e cmd[1]
+	argparse -s (__fish_zoxide_global_optspecs) -- $cmd 2>/dev/null
+	or return
+	if set -q argv[1]
+		# Also print the command, so this can be used to figure out what it is.
+		echo $argv[1]
+		return 1
+	end
+	return 0
 end
 
 function __fish_zoxide_using_subcommand
-    set -l cmd (__fish_zoxide_needs_command)
-    test -z "$cmd"
-    and return 1
-    contains -- $cmd[1] $argv
+	set -l cmd (__fish_zoxide_needs_command)
+	test -z "$cmd"
+	and return 1
+	contains -- $cmd[1] $argv
 end
 
 complete -c zoxide -n "__fish_zoxide_needs_command" -s h -l help -d 'Print help'
@@ -99,7 +99,7 @@ complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -s d -l dedupe -d 'M
 complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -l normalize -d 'Rewrite stored paths using their on-disk spelling'
 complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -s p -l prune -d 'Remove stored paths that no longer resolve to directories'
 complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -s a -l all -d 'Prune, normalize, and deduplicate'
-complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -s i -l assume-insensitive -d 'During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
+complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -s i -l ignore-case -d 'During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
 complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -s n -l dry-run -d 'Show what would change without modifying the database'
 complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -s h -l help -d 'Print help'
 complete -c zoxide -n "__fish_zoxide_using_subcommand tidy" -s V -l version -d 'Print version'

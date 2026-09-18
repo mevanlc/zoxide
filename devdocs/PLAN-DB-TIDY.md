@@ -19,12 +19,12 @@ Actions:
   -a, --all
 
 Options:
-  -i, --assume-insensitive
+  -i, --ignore-case
   -n, --dry-run
 ```
 
 At least one action is required. `--all` selects all three actions and conflicts
-with the individual selectors. `--assume-insensitive` requires deduplication.
+with the individual selectors. `--ignore-case` requires deduplication.
 Path globs default to `*`, cross separators, and match the original full stored
 path.
 
@@ -67,7 +67,7 @@ device and inode from no-follow metadata, keeping distinct final symlinks
 separate. Windows retains the existing handle-based behavior. Dead or unreadable
 entries cannot join a filesystem-confirmed group.
 
-`--assume-insensitive` skips identity checks and merges each complete textual
+`--ignore-case` skips identity checks and merges each complete textual
 group. It is therefore able to merge dead entries, but can also merge distinct
 directories on a case-sensitive filesystem.
 
@@ -88,6 +88,6 @@ category. Dry-run changes the verbs to `would prune`, `would normalize`, and
 - Live, missing, non-directory, dangling-symlink, and live-symlink pruning.
 - Whole-path and partial-prefix spelling correction without symlink resolution.
 - Exact normalization collisions across the path-glob boundary.
-- Filesystem-confirmed and assumed-insensitive deduplication.
+- Filesystem-confirmed and ignore-case deduplication.
 - Score and access-time preservation, deterministic reporting, idempotence, and
   read-only dry runs.

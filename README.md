@@ -98,7 +98,7 @@ Action and behavior options:
 - `-p`, `--prune` — remove paths that no longer resolve to directories.
 - `-a`, `--all` — prune, normalize, and deduplicate.
 - `-n`, `--dry-run` — print what would change and leave the database untouched.
-- `-i`, `--assume-insensitive` — skip the filesystem check and merge every
+- `-i`, `--ignore-case` — skip the filesystem check and merge every
   textually equivalent group. This lets dedupe merge entries whose directories
   no longer exist, which filesystem-confirmed dedupe leaves alone. It can also
   merge genuinely distinct directories on a case-sensitive filesystem, and it

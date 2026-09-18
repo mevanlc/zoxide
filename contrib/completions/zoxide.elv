@@ -168,7 +168,7 @@ set edit:completion:arg-completer[zoxide] = {|@words|
             cand -a 'Prune, normalize, and deduplicate'
             cand --all 'Prune, normalize, and deduplicate'
             cand -i 'During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
-            cand --assume-insensitive 'During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
+            cand --ignore-case 'During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems'
             cand -n 'Show what would change without modifying the database'
             cand --dry-run 'Show what would change without modifying the database'
             cand -h 'Print help'

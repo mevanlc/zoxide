@@ -110,7 +110,7 @@ pub struct Tidy {
     /// Required to merge entries whose directories no longer exist; can merge
     /// genuinely distinct directories on case-sensitive filesystems
     #[clap(long, short = 'i', requires = "dedupe_action")]
-    pub assume_insensitive: bool,
+    pub ignore_case: bool,
 
     /// Show what would change without modifying the database
     #[clap(long, short = 'n')]
@@ -295,9 +295,12 @@ mod tests {
     }
 
     #[test]
-    fn tidy_assume_insensitive_requires_dedupe() {
+    fn tidy_ignore_case_requires_dedupe() {
         assert!(Tidy::try_parse_from(["tidy", "--prune", "-i"]).is_err());
         assert!(Tidy::try_parse_from(["tidy", "--dedupe", "-i"]).is_ok());
         assert!(Tidy::try_parse_from(["tidy", "--all", "-i"]).is_ok());
+        assert!(Tidy::try_parse_from(["tidy", "--prune", "--ignore-case"]).is_err());
+        assert!(Tidy::try_parse_from(["tidy", "--dedupe", "--ignore-case"]).is_ok());
+        assert!(Tidy::try_parse_from(["tidy", "--all", "--ignore-case"]).is_ok());
     }
 }

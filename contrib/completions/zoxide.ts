@@ -414,7 +414,7 @@ const completion: Fig.Spec = {
           ],
         },
         {
-          name: ["-i", "--assume-insensitive"],
+          name: ["-i", "--ignore-case"],
           description: "During deduplication, skip filesystem identity checks and merge all entries that are textually equivalent (Unicode case fold + NFC). Required to merge entries whose directories no longer exist; can merge genuinely distinct directories on case-sensitive filesystems",
         },
         {

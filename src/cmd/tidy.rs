@@ -119,7 +119,7 @@ impl Tidy {
                 needs_probe[idx] = entry.selected;
             }
         }
-        if self.dedupe_enabled() && !self.assume_insensitive {
+        if self.dedupe_enabled() && !self.ignore_case {
             let mut proposed = HashMap::<String, Vec<usize>>::new();
             for (idx, entry) in entries.iter().enumerate().filter(|(_, entry)| entry.selected) {
                 proposed.entry(util::fold_key(&entry.path)).or_default().push(idx);
@@ -210,7 +210,7 @@ impl Tidy {
             }
 
             for group in proposed.into_values().filter(|group| group.len() > 1) {
-                if self.assume_insensitive {
+                if self.ignore_case {
                     union_group(&mut unions, &group);
                     continue;
                 }
@@ -242,7 +242,7 @@ impl Tidy {
 
             let mut path = entries[survivor].path.clone();
             if self.dedupe_enabled()
-                && !self.assume_insensitive
+                && !self.ignore_case
                 && group.len() > 1
                 && let Some(spelling) = group_spelling(survivor, &group, &probes)
             {
@@ -555,7 +555,7 @@ mod tests {
         dedupe: bool,
         normalize: bool,
         prune: bool,
-        assume_insensitive: bool,
+        ignore_case: bool,
         dry_run: bool,
         pathglobs: &[&str],
     ) -> (String, String) {
@@ -565,7 +565,7 @@ mod tests {
             normalize,
             prune,
             all: false,
-            assume_insensitive,
+            ignore_case,
             dry_run,
         };
         let plan = command.plan(db).unwrap();
@@ -592,7 +592,7 @@ mod tests {
             normalize: false,
             prune: false,
             all: true,
-            assume_insensitive: false,
+            ignore_case: false,
             dry_run: false,
         };
 
@@ -602,7 +602,7 @@ mod tests {
     }
 
     #[test]
-    fn assume_insensitive_merges_variants() {
+    fn ignore_case_merges_variants() {
         let data_dir = tempfile::tempdir().unwrap();
         let mut db = Database::open_dir(data_dir.path()).unwrap();
         db.add_unchecked("/foo/PROJECTS", 2.0, 100);
